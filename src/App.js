@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Line } from 'react-chartjs-2';
 import 'chart.js/auto';
 
-const password = "micontraseña123";
+const password = "1234";
 
 export default function App() {
   const [accesoPermitido, setAccesoPermitido] = useState(false);
