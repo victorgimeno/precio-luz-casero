@@ -10,22 +10,33 @@ export default function App() {
   const [precios, setPrecios] = useState([]);
   const [horas, setHoras] = useState([]);
 
-  useEffect(() => {
-    fetch('https://raw.githubusercontent.com/datasets/energy-prices/main/data/electricity-prices.csv')
+    useEffect(() => {
+    const hoy = new Date();
+    const yyyy = hoy.getFullYear();
+    const mm = String(hoy.getMonth() + 1).padStart(2, '0');
+    const dd = String(hoy.getDate()).padStart(2, '0');
+    const fecha = `${yyyy}${mm}${dd}`;
+    const url = `https://www.omie.es/sites/default/files/dados/AGNO_${yyyy}/MES_${mm}/DIA_${dd}/INT_PBC_EV_H_1_1_${fecha}.CSV`;
+
+    fetch(url)
       .then(res => res.text())
-      .then(csv => {
-        const rows = csv.split('\n').slice(1, 9); // ejemplo con 8 horas
+      .then(texto => {
+        const lineas = texto.split('\\n');
         const h = [];
         const p = [];
-        rows.forEach(row => {
-          const parts = row.split(',');
-          h.push(parts[0].split(' ')[1]);
-          p.push(parseFloat(parts[1]) || 0.12);
-        });
+        for (let i = 1; i <= 24; i++) {
+          const columnas = lineas[i]?.split(';');
+          if (columnas && columnas.length >= 5) {
+            h.push(columnas[1]);
+            p.push(parseFloat(columnas[4].replace(',', '.')));
+          }
+        }
         setHoras(h);
         setPrecios(p);
-      });
+      })
+      .catch(err => console.error("Error al cargar CSV:", err));
   }, []);
+
 
   const mejorHora = horas[precios.indexOf(Math.min(...precios))] || "desconocida";
   const precioActual = precios[0] || 0.12;
@@ -62,15 +73,19 @@ export default function App() {
       </p>
 
       <h2>Precios por hora</h2>
-      <Line data={{
-        labels: horas,
-        datasets: [{
-          label: '€/kWh',
-          data: precios,
-          borderColor: '#3b82f6',
-          backgroundColor: 'rgba(59, 130, 246, 0.2)',
-        }],
-      }} />
+      {horas.length && precios.length ? (
+  <Line data={{
+    labels: horas,
+    datasets: [{
+      label: '€/MWh',
+      data: precios,
+      borderColor: '#3b82f6',
+      backgroundColor: 'rgba(59, 130, 246, 0.2)',
+    }],
+  }} />
+) : (
+  <p>Cargando datos...</p>
+)}
 
       <p style={{ marginTop: 20 }}>
         ⏱️ Mejor hora para consumir hoy: <strong>{mejorHora}</strong>
